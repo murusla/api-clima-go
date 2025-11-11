@@ -51,7 +51,6 @@ func main() {
 					"condicao":    weather["description"],
 				}
 
-				// usa mutex pra adicionar ao slice com segurança
 				mutex.Lock()
 				resultados = append(resultados, resultado)
 				mutex.Unlock()
@@ -72,4 +71,5 @@ func main() {
 }
 
 var mutex sync.Mutex
+
 
