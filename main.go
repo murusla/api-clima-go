@@ -17,11 +17,11 @@ func main() {
 		cidades := strings.Split(strings.TrimPrefix(r.URL.Path, "/clima/"), ",")
 
 		var wg sync.WaitGroup
-		resultados := make([]map[string]interface{}, len(cidades))
+		resultados := make([]map[string]interface{}, 0)
 
-		for i, cidade := range cidades {
+		for _, cidade := range cidades {
 			wg.Add(1)
-			go func(i int, cidade string) {
+			go func(cidade string) {
 				defer wg.Done()
 
 				u := fmt.Sprintf("https://api.openweathermap.org/data/2.5/weather?q=%s&appid=%s&units=metric&lang=pt_br",
@@ -36,15 +36,27 @@ func main() {
 				var dados map[string]interface{}
 				json.NewDecoder(resp.Body).Decode(&dados)
 
-				main := dados["main"].(map[string]interface{})
-				weather := dados["weather"].([]interface{})[0].(map[string]interface{})
+				// Verifica se a resposta tem os campos esperados
+				mainData, ok1 := dados["main"].(map[string]interface{})
+				weatherList, ok2 := dados["weather"].([]interface{})
 
-				resultados[i] = map[string]interface{}{
+				if !ok1 || !ok2 || len(weatherList) == 0 {
+					return // pula cidade inválida ou resposta sem dados
+				}
+
+				weather := weatherList[0].(map[string]interface{})
+
+				resultado := map[string]interface{}{
 					"cidade":      dados["name"],
-					"temperatura": fmt.Sprintf("%.1f°C", main["temp"]),
+					"temperatura": fmt.Sprintf("%.1f°C", mainData["temp"]),
 					"condicao":    weather["description"],
 				}
-			}(i, cidade)
+
+				// usa mutex pra adicionar ao slice com segurança
+				mutex.Lock()
+				resultados = append(resultados, resultado)
+				mutex.Unlock()
+			}(cidade)
 		}
 
 		wg.Wait()
@@ -59,3 +71,5 @@ func main() {
 	fmt.Println("Servidor rodando na porta " + port)
 	http.ListenAndServe(":"+port, nil)
 }
+
+var mutex sync.Mutex
