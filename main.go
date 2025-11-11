@@ -36,12 +36,11 @@ func main() {
 				var dados map[string]interface{}
 				json.NewDecoder(resp.Body).Decode(&dados)
 
-				// Verifica se a resposta tem os campos esperados
 				mainData, ok1 := dados["main"].(map[string]interface{})
 				weatherList, ok2 := dados["weather"].([]interface{})
 
 				if !ok1 || !ok2 || len(weatherList) == 0 {
-					return // pula cidade inválida ou resposta sem dados
+					return 
 				}
 
 				weather := weatherList[0].(map[string]interface{})
@@ -73,3 +72,4 @@ func main() {
 }
 
 var mutex sync.Mutex
+
